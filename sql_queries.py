@@ -114,10 +114,18 @@ time_table_create = ("""
 # STAGING TABLES
 
 staging_events_copy = ("""
-""").format()
+	COPY staging_events FROM 's3://udacity-dend/log_data' 
+	CREDENTIALS 'aws_iam_role={}'
+	GZIP REGION 'us-west-2'
+	JSON 's3://udacity-dend/log_json_path.json';
+""").format(config.get("IAM_ROLE", "ARN"))
 
 staging_songs_copy = ("""
-""").format()
+	COPY staging_songs FROM 's3://udacity-dend/song_data' 
+	CREDENTIALS 'aws_iam_role={}'
+	GZIP REGION 'us-west-2'
+	JSON 'auto';
+""").format(config.get("IAM_ROLE", "ARN"))
 
 # FINAL TABLES
 
@@ -125,15 +133,49 @@ songplay_table_insert = ("""
 """)
 
 user_table_insert = ("""
+	INSERT INTO users (user_id, first_name , last_name, gender, level)
+		SELECT userId, 
+			firstName, 
+			lastName,
+			gender, 
+			level 
+		FROM staging_events
+		ON CONFLICT (user_id) DO UPDATE SET level = EXCLUDED.level;
 """)
 
 song_table_insert = ("""
+	INSERT INTO songs (song_id, title, artist_id, year, duration)
+		SELECT song_id,
+			title, 
+			artist_id, 
+			year,
+			duration 
+		FROM staging_songs
+		ON CONFLICT (song_id) DO NOTHING;
 """)
 
 artist_table_insert = ("""
+	INSERT INTO artists (artist_id, name, location, latitude, longitude)
+		SELECT artist_id,
+			artist_name, 
+			artist_location, 
+			artist_latitude, 
+			artist_longitude 
+		FROM staging_songs
+		ON CONFLICT (artist_id) DO NOTHING;
 """)
 
 time_table_insert = ("""
+	INSERT INTO time (start_time, hour, day, week, month, year, weekday)
+			SELECT ts,
+				EXTRACT(HOUR FROM ts),
+				EXTRACT(DAY FROM ts),
+				EXTRACT(WEEK FROM ts),
+				EXTRACT(MONTH FROM ts),
+				EXTRACT(YEAR FROM ts),
+				EXTRACT(ISODOW FROM ts)
+			FROM staging_events
+		ON CONFLICT (start_time) DO NOTHING;
 """)
 
 # QUERY LISTS

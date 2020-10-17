@@ -14,10 +14,12 @@ def load_staging_tables(cur, conn):
     """
     start = time.time()
     print("***************** Loading data into staging tables ***********************")
-    for query in copy_table_queries:
+    for i, query in enumerate(copy_table_queries):
+        start_i = time.time()
         try:
             cur.execute(query)
             conn.commit()
+            print(f"***************** query N° {i+1} ran in {int(time.time() - start_i)} seconds ***********************")
         except psycopg2.Error as e:
             print(f"Can't execute query : {query}")
             print(e)

@@ -114,7 +114,8 @@ To set up the project the following steps can be followed in the given order :
 	```sh
 	python iac_scripts.py -t create_cluster
 	```
-	This will create a Redshift cluster. You can adapt the cluster config according to your needs by modifying the config file, more precisely the `[CLUSTER]` section.
+	This will create a Redshift cluster. You can adapt the cluster config according to your needs by modifying the config file, more precisely the `[CLUSTER]` section. When the script finishes it'll dump the cluster characteristics in `redshift_cluster.json` file in current directory.
+	Then we can copy cluster address from this file to fill the `HOST` field in the configurtion file `dwh.cfg`
 
 * Next, run :
 	```sh

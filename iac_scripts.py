@@ -98,19 +98,6 @@ def create_redshift_cluster():
 				print("***************** Cluster created ***********************")
 		cluster_props_keys = ["ClusterIdentifier", "NodeType", "ClusterStatus", "MasterUsername", "DBName", "Endpoint", "NumberOfNodes", 'VpcId']
 		cluster_props = {k: v for k, v in cluster_props.items() if k in cluster_props_keys}
-		
-		# print("***************** Opening TCP connection ***********************")
-		# vpc = ec2.Vpc(id=cluster_props['VpcId'])
-		# defaultSg = list(vpc.security_groups.all())[0]
-		# print(defaultSg)
-		
-		# defaultSg.authorize_ingress(
-		# 	GroupName=defaultSg.group_name ,
-		# 	CidrIp='0.0.0.0/0',
-		# 	IpProtocol='TCP',
-		# 	FromPort=int(config.get("CLUSTER", "DB_PORT")),
-		# 	ToPort=int(config.get("CLUSTER", "DB_PORT"))
-		# )
 
 		print("***************** Saving cluster props to redshift_cluster.json ***********************")
 		with open("redshift_cluster.json", "w") as f:
@@ -123,7 +110,7 @@ def create_redshift_cluster():
 
 
 def delete_redshift_cluster():
-	print("***************** Creating redshift client ***********************")
+	print("***************** Deleting redshift Cluster ***********************")
 	redshift = boto3.client("redshift",
                          region_name="us-west-2",
                          aws_access_key_id=config.get("AWS", "KEY"),

@@ -37,7 +37,7 @@ staging_events_table_create = ("""
 		ts TIMESTAMP,
 		userAgent VARCHAR,
 		userId INTEGER
-	)
+	);
 """)
 
 staging_songs_table_create = ("""
@@ -52,13 +52,13 @@ staging_songs_table_create = ("""
 		title VARCHAR,
 		duration FLOAT,
 		year SMALLINT
-	)
+	);
 """)
 
 songplay_table_create = ("""
 	CREATE TABLE IF NOT EXISTS songplays (
 		songplay_id BIGINT IDENTITY(0, 1) PRIMARY KEY,
-		start_time TIMESTAMP REFERENCES time NOT NULL,
+		start_time TIMESTAMP REFERENCES time NOT NULL SORTKEY DISTKEY,
 		user_id VARCHAR REFERENCES users NOT NULL,
 		level VARCHAR,
 		song_id VARCHAR REFERENCES songs NOT NULL,
@@ -71,7 +71,7 @@ songplay_table_create = ("""
 
 user_table_create = ("""
 	CREATE TABLE IF NOT EXISTS users (
-		user_id VARCHAR PRIMARY KEY,
+		user_id VARCHAR PRIMARY KEY SORTKEY,
 		first_name VARCHAR,
 		last_name VARCHAR,
 		gender VARCHAR,
@@ -81,7 +81,7 @@ user_table_create = ("""
 
 song_table_create = ("""
 	CREATE TABLE IF NOT EXISTS songs (
-		song_id VARCHAR PRIMARY KEY,
+		song_id VARCHAR PRIMARY KEY SORTKEY,
 		title VARCHAR,
 		artist_id VARCHAR REFERENCES artists NOT NULL,
 		year SMALLINT,
@@ -91,7 +91,7 @@ song_table_create = ("""
 
 artist_table_create = ("""
 	CREATE TABLE IF NOT EXISTS artists (
-		artist_id VARCHAR PRIMARY KEY,
+		artist_id VARCHAR PRIMARY KEY SORTKEY,
 		name VARCHAR,
 		location VARCHAR,
 		latitude FLOAT,
@@ -101,7 +101,7 @@ artist_table_create = ("""
 
 time_table_create = ("""
 	CREATE TABLE IF NOT EXISTS time (
-		start_time TIMESTAMP PRIMARY KEY,
+		start_time TIMESTAMP PRIMARY KEY SORTKEY DISTKEY,
 		hour SMALLINT,
 		day SMALLINT,
 		week SMALLINT,
@@ -114,18 +114,19 @@ time_table_create = ("""
 # STAGING TABLES
 
 staging_events_copy = ("""
-	COPY staging_events FROM 's3://udacity-dend/log_data' 
+	COPY staging_events FROM {} 
 	CREDENTIALS 'aws_iam_role={}'
-	GZIP REGION 'us-west-2'
-	JSON 's3://udacity-dend/log_json_path.json';
-""").format(config.get("IAM_ROLE", "ARN"))
+	REGION {}
+	JSON 's3://udacity-dend/log_json_path.json'
+	TIMEFORMAT 'epochmillisecs';
+""").format(config.get("S3", "LOG_DATA"), config.get("IAM_ROLE", "ARN"), config.get("CLUSTER", "REGION"))
 
 staging_songs_copy = ("""
-	COPY staging_songs FROM 's3://udacity-dend/song_data' 
+	COPY staging_songs FROM {}
 	CREDENTIALS 'aws_iam_role={}'
-	GZIP REGION 'us-west-2'
+	REGION {}
 	JSON 'auto';
-""").format(config.get("IAM_ROLE", "ARN"))
+""").format(config.get("S3", "SONG_DATA"), config.get("IAM_ROLE", "ARN"), config.get("CLUSTER", "REGION"))
 
 # FINAL TABLES
 
@@ -140,54 +141,54 @@ songplay_table_insert = ("""
 			ste.location,
 			ste.userAgent
 		FROM staging_events AS ste
-			LEFT JOIN staging_songs AS sts ON (ste.artist = sts.artist_name AND ste.song = sts.title)
+			JOIN staging_songs AS sts ON (ste.artist = sts.artist_name AND ste.song = sts.title)
 		WHERE ste.page = 'NextSong'
 """)
 
 user_table_insert = ("""
 	INSERT INTO users (user_id, first_name , last_name, gender, level)
-		SELECT userId, 
+		SELECT DISTINCT userId, 
 			firstName, 
 			lastName,
 			gender, 
 			level 
 		FROM staging_events
-		ON CONFLICT (user_id) DO UPDATE SET level = EXCLUDED.level;
+		WHERE userId IS NOT NULL
 """)
 
 song_table_insert = ("""
 	INSERT INTO songs (song_id, title, artist_id, year, duration)
-		SELECT song_id,
+		SELECT DISTINCT song_id,
 			title, 
 			artist_id, 
 			year,
 			duration 
 		FROM staging_songs
-		ON CONFLICT (song_id) DO NOTHING;
+		WHERE song_id IS NOT NULL
 """)
 
 artist_table_insert = ("""
 	INSERT INTO artists (artist_id, name, location, latitude, longitude)
-		SELECT artist_id,
+		SELECT DISTINCT artist_id,
 			artist_name, 
 			artist_location, 
 			artist_latitude, 
 			artist_longitude 
 		FROM staging_songs
-		ON CONFLICT (artist_id) DO NOTHING;
+		WHERE artist_id IS NOT NULL
 """)
 
 time_table_insert = ("""
 	INSERT INTO time (start_time, hour, day, week, month, year, weekday)
-			SELECT ts,
+			SELECT DISTINCT ts,
 				EXTRACT(HOUR FROM ts),
 				EXTRACT(DAY FROM ts),
 				EXTRACT(WEEK FROM ts),
 				EXTRACT(MONTH FROM ts),
 				EXTRACT(YEAR FROM ts),
-				EXTRACT(ISODOW FROM ts)
+				EXTRACT(DAYOFWEEK FROM ts)
 			FROM staging_events
-		ON CONFLICT (start_time) DO NOTHING;
+			WHERE ts IS NOT NULL
 """)
 
 # QUERY LISTS
@@ -197,4 +198,5 @@ create_table_queries = [staging_events_table_create, staging_songs_table_create,
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop,
                       songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
 copy_table_queries = [staging_events_copy, staging_songs_copy]
-insert_table_queries = [user_table_insert, time_table_insert, artist_table_insert, song_table_insert, songplay_table_insert]
+insert_table_queries = [user_table_insert, time_table_insert,
+                        artist_table_insert, song_table_insert, songplay_table_insert]

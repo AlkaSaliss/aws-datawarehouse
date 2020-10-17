@@ -6,6 +6,12 @@ import time
 
 
 def load_staging_tables(cur, conn):
+    """Executes queries that copy data into staging tables
+
+    Args:
+        cur: cursor for executing query against the connected database
+        conn : database connection object
+    """
     start = time.time()
     print("***************** Loading data into staging tables ***********************")
     for query in copy_table_queries:
@@ -20,6 +26,12 @@ def load_staging_tables(cur, conn):
 
 
 def insert_tables(cur, conn):
+    """Executes queries that insert data into fact ad dimension tables
+
+    Args:
+        cur: cursor for executing query against the connected database
+        conn : database connection object
+    """
     start = time.time()
     print("***************** Loading data into Analytics tables ***********************")
     for query in insert_table_queries:

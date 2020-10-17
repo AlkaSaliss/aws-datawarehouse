@@ -4,6 +4,12 @@ from sql_queries import create_table_queries, drop_table_queries
 
 
 def drop_tables(cur, conn):
+    """Executes queries that drop the staging, fact and dimension tables
+
+    Args:
+        cur: cursor for executing query against the connected database
+        conn : database connection object
+    """
     for query in drop_table_queries:
         try:
             cur.execute(query)
@@ -14,6 +20,12 @@ def drop_tables(cur, conn):
 
 
 def create_tables(cur, conn):
+    """Executes queries that creates the staging, fact and dimension tables
+
+    Args:
+        cur: cursor for executing query against the connected database
+        conn : database connection object
+    """
     for query in create_table_queries:
         try:
             cur.execute(query)

@@ -11,6 +11,8 @@ config.read_file(open('dwh.cfg'))
 
 
 def create_iam_role():
+	"""Creates an IAM role and saves role's characteristics into 'role_arn.json' file
+	"""
 	iam = boto3.client("iam",
                     region_name="us-west-2",
                     aws_access_key_id=config.get("AWS", "KEY"),
@@ -46,6 +48,8 @@ def create_iam_role():
 
 
 def delete_iam_role():
+	"""Deletes IAM role and removes `role_arn.json` file containing the role's characteristics
+	"""
 	iam = boto3.client("iam",
                     region_name="us-west-2",
                     aws_access_key_id=config.get("AWS", "KEY"),
@@ -65,11 +69,9 @@ def delete_iam_role():
 
 
 def create_redshift_cluster():
-	print("***************** Creating ec2 and redshift clients ***********************")
-	ec2 = boto3.resource("ec2", region_name="us-west-2",
-                        aws_access_key_id=config.get("AWS", "KEY"),
-                        aws_secret_access_key=config.get("AWS", "SECRET")
-	)
+	"""Creates an Redshift clusetr and saves cluster's characteristics into 'redshift_cluster.json' file
+	"""
+	print("***************** Creating redshift python client ***********************")
 	redshift = boto3.client("redshift",
                          region_name="us-west-2",
                          aws_access_key_id=config.get("AWS", "KEY"),
@@ -110,6 +112,8 @@ def create_redshift_cluster():
 
 
 def delete_redshift_cluster():
+	"""Deletes Redshift cluster and removes `redshift_cluster.json` file containing the clusters's characteristics
+	"""
 	print("***************** Deleting redshift Cluster ***********************")
 	redshift = boto3.client("redshift",
                          region_name="us-west-2",
